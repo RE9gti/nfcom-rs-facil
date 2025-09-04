@@ -5,6 +5,7 @@ import Dashboard from "@/components/Dashboard";
 import EmitirNFCom from "@/components/EmitirNFCom";
 import NotasEmitidas from "@/components/NotasEmitidas";
 import CertificadoA1 from "@/components/CertificadoA1";
+import Configuracao from "@/pages/Configuracao";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -20,12 +21,7 @@ const Index = () => {
       case "certificado":
         return <CertificadoA1 />;
       case "configuracoes":
-        return (
-          <div className="space-y-6">
-            <h2 className="text-3xl font-bold text-foreground">Configurações</h2>
-            <p className="text-muted-foreground">Configure as opções do sistema</p>
-          </div>
-        );
+        return <Configuracao />;
       case "ajuda":
         return (
           <div className="space-y-6">

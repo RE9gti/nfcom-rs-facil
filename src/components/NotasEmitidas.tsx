@@ -12,7 +12,8 @@ import {
   Eye, 
   FileText,
   Calendar,
-  DollarSign
+  DollarSign,
+  Loader2
 } from "lucide-react";
 import {
   Table,
@@ -22,81 +23,56 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useNFComList } from "@/hooks/useNFCom";
 
 const NotasEmitidas = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("todos");
   const [dateFilter, setDateFilter] = useState("30dias");
-
-  const notasExample = [
-    {
-      numero: "000001",
-      serie: "001",
-      data: "2024-01-15",
-      tomador: "Cliente ABC Ltda",
-      valor: "R$ 2.500,00",
-      status: "Autorizada",
-      chave: "43240100000000000001550010000000001123456789"
-    },
-    {
-      numero: "000002",
-      serie: "001", 
-      data: "2024-01-15",
-      tomador: "Empresa XYZ S/A",
-      valor: "R$ 1.800,00",
-      status: "Pendente",
-      chave: "43240100000000000001550010000000002123456789"
-    },
-    {
-      numero: "000003",
-      serie: "001",
-      data: "2024-01-14",
-      tomador: "Comercial 123 ME",
-      valor: "R$ 3.200,00",
-      status: "Autorizada",
-      chave: "43240100000000000001550010000000003123456789"
-    },
-    {
-      numero: "000004",
-      serie: "001",
-      data: "2024-01-14",
-      tomador: "Indústria Beta Ltda",
-      valor: "R$ 950,00",
-      status: "Cancelada",
-      chave: "43240100000000000001550010000000004123456789"
-    },
-    {
-      numero: "000005",
-      serie: "001",
-      data: "2024-01-13",
-      tomador: "Serviços Gamma S/A",
-      valor: "R$ 4.100,00",
-      status: "Autorizada",
-      chave: "43240100000000000001550010000000005123456789"
-    },
-  ];
+  
+  const { data: nfcomList, isLoading } = useNFComList();
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Autorizada': 
+    switch (status.toLowerCase()) {
+      case 'autorizada': 
         return 'bg-accent text-accent-foreground';
-      case 'Pendente': 
+      case 'pendente': 
         return 'bg-warning text-warning-foreground';
-      case 'Cancelada': 
+      case 'cancelada': 
         return 'bg-destructive text-destructive-foreground';
-      case 'Rejeitada':
+      case 'rejeitada':
         return 'bg-destructive text-destructive-foreground';
+      case 'rascunho':
+        return 'bg-muted text-muted-foreground';
       default: 
         return 'bg-muted text-muted-foreground';
     }
   };
 
-  const filteredNotas = notasExample.filter(nota => {
-    const matchesSearch = nota.numero.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         nota.tomador.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredNotas = nfcomList?.filter(nota => {
+    const matchesSearch = nota.numero.toString().includes(searchTerm) ||
+                         nota.tomador?.nome_razao_social?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         nota.empresa?.razao_social?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "todos" || nota.status.toLowerCase() === statusFilter.toLowerCase();
     return matchesSearch && matchesStatus;
-  });
+  }) || [];
+
+  const totalNotas = nfcomList?.length || 0;
+  const valorTotal = nfcomList?.reduce((sum, nota) => sum + Number(nota.valor_total), 0) || 0;
+  const notasMes = nfcomList?.filter(nota => {
+    const notaDate = new Date(nota.created_at);
+    const currentMonth = new Date();
+    return notaDate.getMonth() === currentMonth.getMonth() && 
+           notaDate.getFullYear() === currentMonth.getFullYear();
+  }).length || 0;
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -114,7 +90,7 @@ const NotasEmitidas = () => {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Total de Notas</p>
-              <p className="text-2xl font-bold">42</p>
+              <p className="text-2xl font-bold">{totalNotas}</p>
             </div>
           </div>
         </Card>
@@ -126,7 +102,7 @@ const NotasEmitidas = () => {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Valor Total</p>
-              <p className="text-2xl font-bold">R$ 125.430</p>
+              <p className="text-2xl font-bold">R$ {valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
             </div>
           </div>
         </Card>
@@ -138,7 +114,7 @@ const NotasEmitidas = () => {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Este Mês</p>
-              <p className="text-2xl font-bold">8</p>
+              <p className="text-2xl font-bold">{notasMes}</p>
             </div>
           </div>
         </Card>
@@ -216,27 +192,29 @@ const NotasEmitidas = () => {
           </TableHeader>
           <TableBody>
             {filteredNotas.map((nota) => (
-              <TableRow key={nota.numero}>
+              <TableRow key={nota.id}>
                 <TableCell className="font-medium">
                   <div>
-                    <p>{nota.numero}/{nota.serie}</p>
+                    <p>{nota.numero.toString().padStart(6, '0')}/{nota.serie}</p>
                     <p className="text-xs text-muted-foreground">
-                      {nota.chave.substring(0, 8)}...
+                      {nota.chave_acesso ? nota.chave_acesso.substring(0, 8) + '...' : 'Sem chave'}
                     </p>
                   </div>
                 </TableCell>
                 <TableCell>
-                  {new Date(nota.data).toLocaleDateString('pt-BR')}
+                  {new Date(nota.data_emissao).toLocaleDateString('pt-BR')}
                 </TableCell>
                 <TableCell>
                   <div className="max-w-[200px] truncate">
-                    {nota.tomador}
+                    {nota.tomador?.nome_razao_social || 'N/A'}
                   </div>
                 </TableCell>
-                <TableCell className="font-medium">{nota.valor}</TableCell>
+                <TableCell className="font-medium">
+                  R$ {Number(nota.valor_total).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </TableCell>
                 <TableCell>
                   <Badge className={getStatusColor(nota.status)}>
-                    {nota.status}
+                    {nota.status.charAt(0).toUpperCase() + nota.status.slice(1)}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right">
