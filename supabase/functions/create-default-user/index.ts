@@ -26,9 +26,19 @@ Deno.serve(async (req) => {
 
     console.log('Creating default user...')
 
+    // Generate secure random password
+    const generateSecurePassword = () => {
+      const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#$%&*';
+      let password = '';
+      for (let i = 0; i < 16; i++) {
+        password += charset.charAt(Math.floor(Math.random() * charset.length));
+      }
+      return password;
+    }
+
     // Default user credentials
     const defaultEmail = 'admin@nfcom.com'
-    const defaultPassword = 'nfcom123'
+    const defaultPassword = generateSecurePassword()
 
     // Check if user already exists
     const { data: existingUsers, error: listError } = await supabaseAdmin.auth.admin.listUsers()
@@ -68,13 +78,16 @@ Deno.serve(async (req) => {
     }
 
     console.log('Default user created successfully:', newUser.user.email)
+    // Log password securely (only in server logs, not in response)
+    console.log('Generated password for default user:', defaultPassword)
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: 'Usuário padrão criado com sucesso',
+        message: 'Usuário padrão criado com sucesso. Senha foi gerada e está disponível nos logs do servidor.',
         email: defaultEmail,
-        password: defaultPassword,
+        // SECURITY: Never expose password in API response
+        passwordNote: 'Senha gerada aleatoriamente. Verifique os logs do servidor para obter a senha.',
         user_id: newUser.user.id
       }),
       { 

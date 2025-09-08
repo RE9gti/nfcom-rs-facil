@@ -280,7 +280,7 @@ const Auth = () => {
             <div className="mt-4 p-3 bg-muted/50 rounded-lg">
               <p className="text-xs font-medium mb-2">Usuário padrão para testes:</p>
               <p className="text-xs">Email: <span className="font-mono">admin@nfcom.com</span></p>
-              <p className="text-xs">Senha: <span className="font-mono">nfcom123</span></p>
+              <p className="text-xs text-muted-foreground">Senha: Gerada automaticamente (verifique logs do servidor)</p>
               <button
                 onClick={async () => {
                   try {
@@ -288,10 +288,14 @@ const Auth = () => {
                     if (response.data?.success) {
                       toast({
                         title: "Sucesso",
-                        description: response.data.message
+                        description: response.data.message,
+                        duration: 8000
                       });
+                    } else {
+                      throw new Error(response.error?.message || 'Erro desconhecido');
                     }
                   } catch (error) {
+                    console.error('Error creating default user:', error);
                     toast({
                       title: "Erro",
                       description: "Erro ao criar usuário padrão",
