@@ -277,6 +277,33 @@ const Auth = () => {
             <p>
               Emita suas NFCom de forma segura e em conformidade com a legislação do RS
             </p>
+            <div className="mt-4 p-3 bg-muted/50 rounded-lg">
+              <p className="text-xs font-medium mb-2">Usuário padrão para testes:</p>
+              <p className="text-xs">Email: <span className="font-mono">admin@nfcom.com</span></p>
+              <p className="text-xs">Senha: <span className="font-mono">nfcom123</span></p>
+              <button
+                onClick={async () => {
+                  try {
+                    const response = await supabase.functions.invoke('create-default-user');
+                    if (response.data?.success) {
+                      toast({
+                        title: "Sucesso",
+                        description: response.data.message
+                      });
+                    }
+                  } catch (error) {
+                    toast({
+                      title: "Erro",
+                      description: "Erro ao criar usuário padrão",
+                      variant: "destructive"
+                    });
+                  }
+                }}
+                className="mt-2 text-xs text-primary hover:underline"
+              >
+                Criar usuário padrão
+              </button>
+            </div>
           </div>
         </Card>
         
